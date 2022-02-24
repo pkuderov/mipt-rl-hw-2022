@@ -1,1 +1,1 @@
-# mipt-rl-hw-2022
+# Repository for CDS MIPT RL 2022 course assignments

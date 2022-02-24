@@ -1,3 +1,12 @@
+# Project-specific
+.idea/
+data/
+
+# LaTeX
+*.synctex.gz
+/**/assignment/*.pdf
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
