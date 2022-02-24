@@ -8,17 +8,15 @@ brew install git-lfs
 
 # for linux
 sudo apt-get install git-lfs
-
-# ==> then turn it on for the current user
-git lfs install
 ```
 
-Then pull the repository again:
+Turn it on and then pull the repository again:
 
 ```bash
 cd <project root>
 
 # pull files from git lfs
+git lfs install
 git pull
 ```
 
