@@ -5,7 +5,7 @@ import time
 def sample_trajectory(env, policy, max_path_length, render=False, render_mode=('rgb_array')):
 
     # initialize env for the beginning of a new rollout
-    ob = TODO # HINT: should be the output of resetting the env
+    ob = env.reset()
 
     # init vars
     obs, acs, rewards, next_obs, terminals, image_obs = [], [], [], [], [], []
@@ -25,7 +25,7 @@ def sample_trajectory(env, policy, max_path_length, render=False, render_mode=('
 
         # use the most recent ob to decide what to do
         obs.append(ob)
-        ac = TODO # HINT: query the policy's get_action function
+        ac = policy.get_action(ob)
         ac = ac[0]
         acs.append(ac)
 
@@ -39,8 +39,14 @@ def sample_trajectory(env, policy, max_path_length, render=False, render_mode=('
 
         # TODO end the rollout if the rollout ended
         # HINT: rollout can end due to done, or due to max_path_length
-        rollout_done = TODO # HINT: this is either 0 or 1
+        rollout_done = 0
         terminals.append(rollout_done)
+
+        if done:
+          rollout_done = 1
+
+        if steps == max_path_length:
+          rollout_done = 1
 
         if rollout_done:
             break
@@ -59,7 +65,11 @@ def sample_trajectories(env, policy, min_timesteps_per_batch, max_path_length, r
     paths = []
     while timesteps_this_batch < min_timesteps_per_batch:
 
-        TODO
+        new = sample_trajectory(env, policy, max_path_length,
+         render, render_mode)
+
+        paths.append(new)
+        timesteps_this_batch += get_pathlength(new)
 
     return paths, timesteps_this_batch
 
@@ -70,9 +80,8 @@ def sample_n_trajectories(env, policy, ntraj, max_path_length, render=False, ren
         TODO implement this function
         Hint1: use sample_trajectory to get each path (i.e. rollout) that goes into paths
     """
-    paths = []
 
-    TODO
+    paths = [sample_trajectory(env, policy, max_path_length, render, render_mode) for _ in range(ntraj)]
 
     return paths
 
