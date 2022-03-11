@@ -5,7 +5,8 @@ from .base_agent import BaseAgent
 
 class BCAgent(BaseAgent):
     def __init__(self, env, agent_params):
-        super(BCAgent, self).__init__()
+        # super(BCAgent, self).__init__()        
+        super().__init__()
 
         # init vars
         self.env = env
