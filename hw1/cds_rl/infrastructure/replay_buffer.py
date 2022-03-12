@@ -1,4 +1,5 @@
 from cds_rl.infrastructure.utils import *
+import numpy as np
 
 
 class ReplayBuffer(object):
@@ -69,12 +70,16 @@ class ReplayBuffer(object):
         )
 
         # TODO return batch_size number of random entries from each of the 5 component arrays above
-        # HINT 1: use np.random.permutation to sample random indices
+        # HINT 1: use np.random.permutation to sample random indices +
         # HINT 2: return corresponding data points from each array (i.e., not different indices from each array)
         # HINT 3: look at the sample_recent_data function below
 
         # return TODO, TODO, TODO, TODO, TODO
-        raise NotImplementedError()
+        #+
+        
+        indx = np.random.permutation(self.obs.shape[0])
+        indx = indx[:batch_size]
+        return self.obs[indx], self.acs[indx], self.rews[indx], self.next_obs[indx], self.terminals[indx]
 
     def sample_recent_data(self, batch_size=1):
         return (
