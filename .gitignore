@@ -1,6 +1,5 @@
 # Project-specific
 .idea/
-data/
 
 # LaTeX
 *.synctex.gz
