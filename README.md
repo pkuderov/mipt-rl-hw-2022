@@ -1,1 +1,1 @@
-# Repository for CDS MIPT RL 2022 course assignments
+Отчет находится в файл hw1.pdf
