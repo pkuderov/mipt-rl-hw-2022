@@ -117,8 +117,8 @@ class MLPPolicySL(MLPPolicy):
     ):
         # TODO: update the policy and return the loss
         self.optimizer.zero_grad()
-        predicted_actions = self(torch.Tensor(observations))
-        loss = self.loss(predicted_actions, torch.Tensor(actions))
+        pred = self(torch.Tensor(observations))
+        loss = self.loss(pred, torch.Tensor(actions))
         loss.backward()
         self.optimizer.step()
         return {
