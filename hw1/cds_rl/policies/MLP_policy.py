@@ -57,6 +57,11 @@ class MLPPolicy(BasePolicy, nn.Module, metaclass=abc.ABCMeta):
                 output_size=self.ac_dim,
                 n_layers=self.n_layers, size=self.size,
             )
+            #DEBUG
+            #print("DEBUG")
+            #print(self.discrete)
+            #print(self.mean_net)
+
             self.mean_net.to(ptu.device)
             self.logstd = nn.Parameter(
                 torch.zeros(self.ac_dim, dtype=torch.float32, device=ptu.device)
@@ -66,6 +71,8 @@ class MLPPolicy(BasePolicy, nn.Module, metaclass=abc.ABCMeta):
                 itertools.chain([self.logstd], self.mean_net.parameters()),
                 self.learning_rate
             )
+
+            self.loss = nn.CrossEntropyLoss()
 
     ##################################
 
@@ -81,11 +88,23 @@ class MLPPolicy(BasePolicy, nn.Module, metaclass=abc.ABCMeta):
             observation = obs[None]
 
         # TODO return the action that the policy prescribes
-        raise NotImplementedError
+        observation = torch.from_numpy(observation).to(ptu.device)
+        #print("DEBUG")
+        #print(type(observation))
+        return self.forward(observation.float()).cpu().detach().numpy()
 
     # update/train this policy
     def update(self, observations, actions, **kwargs):
-        raise NotImplementedError
+        pass
+        
+        #self.optimizer.zero_grad()
+
+        #forward pass
+        #pred_actions = self.forward(observations)
+        #loss = self.loss(pred_actions, actions)
+        #loss.backward()
+        #self.optimizer.step()
+
 
     # This function defines the forward pass of the network.
     # You can return anything you want, but you should be able to differentiate
@@ -93,7 +112,7 @@ class MLPPolicy(BasePolicy, nn.Module, metaclass=abc.ABCMeta):
     # return more flexible objects, such as a
     # `torch.distributions.Distribution` object. It's up to you!
     def forward(self, observation: torch.FloatTensor) -> Any:
-        raise NotImplementedError
+        return self.mean_net.forward(observation)
 
 
 #####################################################
@@ -109,7 +128,24 @@ class MLPPolicySL(MLPPolicy):
             adv_n=None, acs_labels_na=None, qvals=None
     ):
         # TODO: update the policy and return the loss
-        loss = TODO
+        observations = torch.from_numpy(observations).to(ptu.device).float()
+        actions = torch.from_numpy(actions).to(ptu.device).float()
+
+        self.optimizer.zero_grad()
+
+        #print("DEBUG")
+        #print(observations.shape)
+
+        pred_actions = self.forward(observations)
+
+        #print("DEBUG")
+        #print(pred_actions.shape)
+        #print(actions.shape)
+
+        loss = self.loss(pred_actions, actions)
+        loss.backward()
+        self.optimizer.step()
+
         return {
             # You can add extra logging information here, but keep this line
             'Training Loss': ptu.to_numpy(loss),
