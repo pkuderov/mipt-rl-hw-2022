@@ -1,6 +1,7 @@
 # Project-specific
 .idea/
 data/
+.DS_Store
 
 # LaTeX
 *.synctex.gz
