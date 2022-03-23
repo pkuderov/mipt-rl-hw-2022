@@ -29,27 +29,27 @@ You will be running your policy gradients implementation in five experiments tot
 Run the following commands:
 
 ```bash
-python cs285/scripts/run_hw2.py \
+python scripts/run_hw2.py \
     --env_name CartPole-v0 -n 100 -b 1000 \
     -dsa --exp_name q1_sb_no_rtg_dsa
 
-python cs285/scripts/run_hw2.py \
+python scripts/run_hw2.py \
     --env_name CartPole-v0 -n 100 -b 1000 \
     -rtg -dsa --exp_name q1_sb_rtg_dsa
 
-python cs285/scripts/run_hw2.py \
+python scripts/run_hw2.py \
     --env_name CartPole-v0 -n 100 -b 1000 \
     -rtg --exp_name q1_sb_rtg_na
 
-python cs285/scripts/run_hw2.py \
+python scripts/run_hw2.py \
     --env_name CartPole-v0 -n 100 -b 5000 \
     -dsa --exp_name q1_lb_no_rtg_dsa
 
-python cs285/scripts/run_hw2.py \
+python scripts/run_hw2.py \
     --env_name CartPole-v0 -n 100 -b 5000 \
     -rtg -dsa --exp_name q1_lb_rtg_dsa
 
-python cs285/scripts/run_hw2.py \
+python scripts/run_hw2.py \
     --env_name CartPole-v0 -n 100 -b 5000 \
     -rtg --exp_name q1_lb_rtg_na
 ```
@@ -70,7 +70,7 @@ Various other command line arguments will allow you to set batch size, learning 
 Use this command template:
 
 ```bash
-python cs285/scripts/run_hw2.py \
+python scripts/run_hw2.py \
     --env_name InvertedPendulum-v2 \
     --ep_len 1000 --discount 0.9 -n 100 -l 2 -s 64 \
     -b <b*> -lr <r*> -rtg \
@@ -85,7 +85,7 @@ to test different batch size `b*` and learning rate `r*`. Your task is to find t
 Run the following command:
 
 ```bash
-python cs285/scripts/run_hw2.py \
+python scripts/run_hw2.py \
     --env_name LunarLanderContinuous-v2 --ep_len 1000 \
     --discount 0.99 -n 100 -l 2 -s 64 -b 40000 -lr 0.005 \
     --reward_to_go --nn_baseline --exp_name q3_b40000_r0.005
@@ -96,7 +96,7 @@ python cs285/scripts/run_hw2.py \
 Search over batch sizes b ∈ [10000, 30000, 50000] and learning rates r ∈ [0.005, 0.01, 0.02] to replace `<b>` and `<r>` below
 
 ```bash
-python cs285/scripts/run_hw2.py \
+python scripts/run_hw2.py \
     --env_name HalfCheetah-v2 --ep_len 150 \
     --discount 0.95 -n 100 -l 2 -s 32 \
     -b <b> -lr <r> -rtg --nn_baseline \
@@ -106,25 +106,25 @@ python cs285/scripts/run_hw2.py \
 Once you’ve found optimal values `b*` and `r*`, use them to run the following commands (replace the terms in angle brackets):
 
 ```bash
-python cs285/scripts/run_hw2.py \
+python scripts/run_hw2.py \
     --env_name HalfCheetah-v2 --ep_len 150 \
     --discount 0.95 -n 100 -l 2 -s 32 \
     -b <b*> -lr <r*> \
     --exp_name q4_b<b*>_r<r*>
 
-python cs285/scripts/run_hw2.py \
+python scripts/run_hw2.py \
     --env_name HalfCheetah-v2 --ep_len 150 \
     --discount 0.95 -n 100 -l 2 -s 32 \
     -b <b*> -lr <r*> -rtg \
     --exp_name q4_b<b*>_r<r*>_rtg
 
-python cs285/scripts/run_hw2.py \
+python scripts/run_hw2.py \
     --env_name HalfCheetah-v2 --ep_len 150 \
     --discount 0.95 -n 100 -l 2 -s 32 \
     -b <b*> -lr <r*> --nn_baseline \
     --exp_name q4_b<b*>_r<r*>_nnbaseline
 
-python cs285/scripts/run_hw2.py \
+python scripts/run_hw2.py \
     --env_name HalfCheetah-v2 --ep_len 150 \
     --discount 0.95 -n 100 -l 2 -s 32 \
     -b <b*> -lr <r*> -rtg --nn_baseline \
@@ -137,7 +137,7 @@ Search over λ ∈ [0, 0.95, 0.99, 1] to replace `<λ>` below. *Please, do not c
 learning rate)!*
 
 ```bash
-python cs285/scripts/run_hw2.py \
+python scripts/run_hw2.py \
     --env_name Hopper-v2 --ep_len 1000
     --discount 0.99 -n 300 -l 2 -s 32 -b 2000 -lr 0.001 \
     --reward_to_go --nn_baseline \
