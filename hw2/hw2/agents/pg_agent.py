@@ -3,6 +3,7 @@ import numpy as np
 from hw2.agents.base_agent import BaseAgent
 from hw2.policies.MLP_policy import MLPPolicyPG
 from hw2.infrastructure.replay_buffer import ReplayBuffer
+from hw2.infrastructure.utils import normalize, unnormalize
 
 
 class PGAgent(BaseAgent):
@@ -46,8 +47,8 @@ class PGAgent(BaseAgent):
         # HINT2: look at the MLPPolicyPG class for how to update the policy
             # and obtain a train_log
         q_values = self.calculate_q_vals(rewards_list)
-        advantage_values = self.estimate_advantage(observations, q_values, rewards_list)
-        train_log = self.actor.update(observations, observations, q_values = q_values, advantage = advantage_values)
+        advantage_values = self.estimate_advantage(observations, rewards_list, q_values, terminals)
+        train_log = self.actor.update(observations, actions, advantage_values, q_values)
 
         return train_log
 
@@ -93,14 +94,14 @@ class PGAgent(BaseAgent):
         # Estimate the advantage when nn_baseline is True,
         # by querying the neural network that you're using to learn the value function
         if self.nn_baseline:
-            values_unnormalized = self.actor.run_baseline_prediction(obs).cpu().detach().numpy() #???
+            values_unnormalized = self.actor.run_baseline_prediction(obs) #???
             ## ensure that the value predictions and q_values have the same dimensionality
             ## to prevent silent broadcasting errors
             assert values_unnormalized.ndim == q_values.ndim
             ## TODO: values were trained with standardized q_values, so ensure
                 ## that the predictions have the same mean and standard deviation as
                 ## the current batch of q_values
-            values = values_unnormalized * np.std(q_values) + np.mean(q_values)
+            values = unnormalize(values_unnormalized, np.mean(q_values), np.std(q_values)) 
 
             if self.gae_lambda is not None:
                 ## append a dummy T+1 value for simpler recursive calculation
@@ -122,6 +123,11 @@ class PGAgent(BaseAgent):
                         ## 0 otherwise.
                     ## HINT 2: self.gae_lambda is the lambda value in the
                         ## GAE formula
+                    if terminals[i] != 1:
+                        advantages[i] = rews[i] + self.gamma * values[i + 1] - values[i]
+                        advantages[i] += self.gamma * self.gae_lambda * advantages[i + 1]
+                    else:
+                        advantages[i] = rews[i] - values[i]
                     
 
                 # remove dummy advantage
@@ -139,7 +145,7 @@ class PGAgent(BaseAgent):
         if self.standardize_advantages:
             ## TODO: standardize the advantages to have a mean of zero
             ## and a standard deviation of one
-            advantages = (advantages - np.mean(advantages)) / (np.std(advantages) + 1e-8)
+            advantages = normalize(advantages, np.mean(advantages), np.std(advantages))
 
         return advantages
 

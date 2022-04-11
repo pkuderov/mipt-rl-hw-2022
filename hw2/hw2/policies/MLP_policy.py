@@ -9,7 +9,7 @@ from torch import optim
 
 from hw2.infrastructure import pytorch_util as ptu
 from hw2.policies.base_policy import BasePolicy
-
+from hw2.infrastructure.utils import normalize, unnormalize
 
 class MLPPolicy(BasePolicy, nn.Module, metaclass=abc.ABCMeta):
 
@@ -100,7 +100,7 @@ class MLPPolicy(BasePolicy, nn.Module, metaclass=abc.ABCMeta):
         else:
             observation = obs[None]
 
-        observation = torch.Tensor(observation).to(ptu.device)
+        observation = ptu.from_numpy(observation)
         action = self(observation).cpu().detach().numpy()
         return action
 
@@ -174,10 +174,13 @@ class MLPPolicyPG(MLPPolicy):
                 ## ptu.from_numpy before using it in the loss
 
             self.baseline_optimizer.zero_grad() #???
+
             baseline_prediction = self.baseline_optimizer(observations).view(-1)
-            baseline_target = ptu.from_numpy((q_values - q_values.mean()) / (q_values.std() + 1e-8))
+            baseline_target = ptu.from_numpy(normalize(q_values, np.mean(q_values), np.mean(q_values)))
             baseline_loss = self.baseline_loss(baseline_prediction, baseline_target)
+
             baseline_loss.backward()
+            self.baseline_optimizer.step()
 
         self.optimizer.step()
 
