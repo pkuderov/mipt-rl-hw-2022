@@ -101,7 +101,9 @@ class MLPPolicy(BasePolicy, nn.Module, metaclass=abc.ABCMeta):
             observation = obs[None]
 
         observation = ptu.from_numpy(observation)
-        action = self(observation).cpu().detach().numpy()
+        with torch.no_grad():
+            action = self.forward(observation).sample()
+        action = ptu.to_numpy(action)
         return action
 
     # update/train this policy
