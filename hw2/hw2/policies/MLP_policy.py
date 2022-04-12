@@ -177,7 +177,7 @@ class MLPPolicyPG(MLPPolicy):
 
             self.baseline_optimizer.zero_grad() #???
 
-            baseline_prediction = self.baseline_optimizer(observations).view(-1)
+            baseline_prediction = self.baseline(observations).squeeze()
             baseline_target = ptu.from_numpy(normalize(q_values, np.mean(q_values), np.mean(q_values)))
             baseline_loss = self.baseline_loss(baseline_prediction, baseline_target)
 
