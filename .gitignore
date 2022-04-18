@@ -1,6 +1,5 @@
 # Project-specific
 .idea/
-data/
 .DS_Store
 
 # LaTeX
