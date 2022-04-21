@@ -1,129 +1,247 @@
-import copy
+import time
+from collections import OrderedDict
 
+import gym
 import numpy as np
+import torch
+import pickle
+
+from hw2.infrastructure import pytorch_util as ptu
+from hw2.infrastructure import utils
+from hw2.infrastructure.action_noise_wrapper import ActionNoiseWrapper
+from hw2.infrastructure.logger import Logger
+
+# how many rollouts to save as videos to tensorboard
+MAX_NVIDEO = 2
+MAX_VIDEO_LEN = 40 # we overwrite this in the code below
 
 
-############################################
-############################################
+class RL_Trainer(object):
 
-def calculate_mean_prediction_error(env, action_sequence, models, data_statistics):
+    def __init__(self, params):
 
-    model = models[0]
+        #############
+        ## INIT
+        #############
 
-    # true
-    true_states = perform_actions(env, action_sequence)['observation']
+        # Get params, create logger
+        self.params = params
+        self.logger = Logger(self.params['logdir'])
 
-    # predicted
-    ob = np.expand_dims(true_states[0],0)
-    pred_states = []
-    for ac in action_sequence:
-        pred_states.append(ob)
-        action = np.expand_dims(ac,0)
-        ob = model.get_prediction(ob, action, data_statistics)
-    pred_states = np.squeeze(pred_states)
+        # Set random seeds
+        seed = self.params['seed']
+        np.random.seed(seed)
+        torch.manual_seed(seed)
+        ptu.init_gpu(
+            use_gpu=not self.params['no_gpu'],
+            gpu_id=self.params['which_gpu']
+        )
 
-    # mpe
-    mpe = mean_squared_error(pred_states, true_states)
+        #############
+        ## ENV
+        #############
 
-    return mpe, true_states, pred_states
+        # Make the gym environment
+        self.env = gym.make(self.params['env_name'])
+        self.env.seed(seed)
 
-def perform_actions(env, actions):
-    ob = env.reset()
-    obs, acs, rewards, next_obs, terminals, image_obs = [], [], [], [], [], []
-    steps = 0
-    for ac in actions:
-        obs.append(ob)
-        acs.append(ac)
-        ob, rew, done, _ = env.step(ac)
-        # add the observation after taking a step to next_obs
-        next_obs.append(ob)
-        rewards.append(rew)
-        steps += 1
-        # If the episode ended, the corresponding terminal value is 1
-        # otherwise, it is 0
-        if done:
-            terminals.append(1)
-            break
+        # Add noise wrapper
+        if params['action_noise_std'] > 0:
+            self.env = ActionNoiseWrapper(self.env, seed, params['action_noise_std'])
+
+        # import plotting (locally if 'obstacles' env)
+        if not(self.params['env_name']=='obstacles-cs285-v0'):
+            import matplotlib
+            matplotlib.use('Agg')
+
+        # Maximum length for episodes
+        self.params['ep_len'] = self.params['ep_len'] or self.env.spec.max_episode_steps
+        global MAX_VIDEO_LEN
+        MAX_VIDEO_LEN = self.params['ep_len']
+
+        # Is this env continuous, or self.discrete?
+        discrete = isinstance(self.env.action_space, gym.spaces.Discrete)
+        # Are the observations images?
+        img = len(self.env.observation_space.shape) > 2
+
+        self.params['agent_params']['discrete'] = discrete
+
+        # Observation and action sizes
+
+        ob_dim = self.env.observation_space.shape if img else self.env.observation_space.shape[0]
+        ac_dim = self.env.action_space.n if discrete else self.env.action_space.shape[0]
+        self.params['agent_params']['ac_dim'] = ac_dim
+        self.params['agent_params']['ob_dim'] = ob_dim
+
+        # simulation timestep, will be used for video saving
+        if 'model' in dir(self.env):
+            self.fps = 1/self.env.model.opt.timestep
+        elif 'env_wrappers' in self.params:
+            self.fps = 30 # This is not actually used when using the Monitor wrapper
+        elif 'video.frames_per_second' in self.env.env.metadata.keys():
+            self.fps = self.env.env.metadata['video.frames_per_second']
         else:
-            terminals.append(0)
-
-    return Path(obs, image_obs, acs, rewards, next_obs, terminals)
-
-def mean_squared_error(a, b):
-    return np.mean((a-b)**2)
-
-############################################
-############################################
-
-def sample_trajectory(env, policy, max_path_length, render=False, render_mode=('rgb_array')):
-    # TODO: get this from hw1
-
-def sample_trajectories(env, policy, min_timesteps_per_batch, max_path_length, render=False, render_mode=('rgb_array')):
-    # TODO: get this from hw1
-
-def sample_n_trajectories(env, policy, ntraj, max_path_length, render=False, render_mode=('rgb_array')):
-    # TODO: get this from hw1
-
-############################################
-############################################
-
-def Path(obs, image_obs, acs, rewards, next_obs, terminals):
-    """
-        Take info (separate arrays) from a single rollout
-        and return it in a single dictionary
-    """
-    if image_obs != []:
-        image_obs = np.stack(image_obs, axis=0)
-    return {"observation" : np.array(obs, dtype=np.float32),
-            "image_obs" : np.array(image_obs, dtype=np.uint8),
-            "reward" : np.array(rewards, dtype=np.float32),
-            "action" : np.array(acs, dtype=np.float32),
-            "next_observation": np.array(next_obs, dtype=np.float32),
-            "terminal": np.array(terminals, dtype=np.float32)}
+            self.fps = 10
 
 
-def convert_listofrollouts(paths):
-    """
-        Take a list of rollout dictionaries
-        and return separate arrays,
-        where each array is a concatenation of that array from across the rollouts
-    """
-    observations = np.concatenate([path["observation"] for path in paths])
-    actions = np.concatenate([path["action"] for path in paths])
-    next_observations = np.concatenate([path["next_observation"] for path in paths])
-    terminals = np.concatenate([path["terminal"] for path in paths])
-    concatenated_rewards = np.concatenate([path["reward"] for path in paths])
-    unconcatenated_rewards = [path["reward"] for path in paths]
-    return observations, actions, next_observations, terminals, concatenated_rewards, unconcatenated_rewards
+        #############
+        ## AGENT
+        #############
 
-############################################
-############################################
+        agent_class = self.params['agent_class']
+        self.agent = agent_class(self.env, self.params['agent_params'])
 
-def get_pathlength(path):
-    return len(path["reward"])
+    def run_training_loop(self, n_iter, collect_policy, eval_policy,
+                          initial_expertdata=None, relabel_with_expert=False,
+                          start_relabel_with_expert=1, expert_policy=None):
+        """
+        :param n_iter:  number of (dagger) iterations
+        :param collect_policy:
+        :param eval_policy:
+        :param initial_expertdata:
+        :param relabel_with_expert:  whether to perform dagger
+        :param start_relabel_with_expert: iteration at which to start relabel with expert
+        :param expert_policy:
+        """
 
-def normalize(data, mean, std, eps=1e-8):
-    return (data-mean)/(std+eps)
+        # init vars at beginning of training
+        self.total_envsteps = 0
+        self.start_time = time.time()
 
-def unnormalize(data, mean, std):
-    return data*std+mean
+        for itr in range(n_iter):
+            print("\n\n********** Iteration %i ************"%itr)
 
-def add_noise(data_inp, noiseToSignal=0.01):
+            # decide if videos should be rendered/logged at this iteration
+            if itr % self.params['video_log_freq'] == 0 and self.params['video_log_freq'] != -1:
+                self.logvideo = True
+            else:
+                self.logvideo = False
 
-    data = copy.deepcopy(data_inp) #(num data points, dim)
+            # decide if metrics should be logged
+            if self.params['scalar_log_freq'] == -1:
+                self.logmetrics = False
+            elif itr % self.params['scalar_log_freq'] == 0:
+                self.logmetrics = True
+            else:
+                self.logmetrics = False
 
-    #mean of data
-    mean_data = np.mean(data, axis=0)
+            # collect trajectories, to be used for training
+            training_returns = self.collect_training_trajectories(
+                itr, initial_expertdata, collect_policy, self.params['batch_size']
+            )
+            paths, envsteps_this_batch, train_video_paths = training_returns
+            self.total_envsteps += envsteps_this_batch
 
-    #if mean is 0,
-    #make it 0.001 to avoid 0 issues later for dividing by std
-    mean_data[mean_data == 0] = 0.000001
+            # add collected data to replay buffer
+            self.agent.add_to_replay_buffer(paths)
 
-    #width of normal distribution to sample noise from
-    #larger magnitude number = could have larger magnitude noise
-    std_of_noise = mean_data * noiseToSignal
-    for j in range(mean_data.shape[0]):
-        data[:, j] = np.copy(data[:, j] + np.random.normal(
-            0, np.absolute(std_of_noise[j]), (data.shape[0],)))
+            # train agent (using sampled data from replay buffer)
+            train_logs = self.train_agent()
 
-    return data
+            # log/save
+            if self.logvideo or self.logmetrics:
+                # perform logging
+                print('\nBeginning logging procedure...')
+                self.perform_logging(itr, paths, eval_policy, train_video_paths, train_logs)
+
+                if self.params['save_params']:
+                    self.agent.save('{}/agent_itr_{}.pt'.format(self.params['logdir'], itr))
+
+    ####################################
+    ####################################
+
+    def collect_training_trajectories(self, itr, initial_expertdata, collect_policy, batch_size):
+        # TODO: GETTHIS from HW1
+        if itr == 0 and initial_expertdata:
+            with open(initial_expertdata, "rb") as f:
+                loaded_paths = pickle.load(f)
+            return loaded_paths, 0, None
+
+        print("\nCollecting data to be used for training...")
+        paths, envsteps_this_batch = utils.sample_trajectories(self.env, collect_policy, batch_size, self.params['ep_len'])
+
+        train_video_paths = None
+        if self.logvideo:
+            print('\nCollecting train rollouts to be used for saving videos...')
+            train_video_paths = utils.sample_n_trajectories(self.env, collect_policy, MAX_NVIDEO, MAX_VIDEO_LEN, True)
+
+        return paths, envsteps_this_batch, train_video_paths
+
+    def train_agent(self):
+        # TODO: GETTHIS from HW1
+        print('\nTraining agent using sampled data from replay buffer...')
+        all_logs = []
+        for train_step in range(self.params['num_agent_train_steps_per_iter']):
+
+            ob_batch, ac_batch, re_batch, next_ob_batch, terminal_batch = self.agent.sample(self.params['train_batch_size'])
+
+            train_log = self.agent.train(ob_batch, ac_batch, re_batch, next_ob_batch, terminal_batch)
+            all_logs.append(train_log)
+        return all_logs
+
+    ####################################
+    ####################################
+
+    def perform_logging(self, itr, paths, eval_policy, train_video_paths, all_logs):
+
+        last_log = all_logs[-1]
+
+        #######################
+
+        # collect eval trajectories, for logging
+        print("\nCollecting data for eval...")
+        eval_paths, eval_envsteps_this_batch = utils.sample_trajectories(self.env, eval_policy, self.params['eval_batch_size'], self.params['ep_len'])
+
+        # save eval rollouts as videos in tensorboard event file
+        if self.logvideo and train_video_paths != None:
+            print('\nCollecting video rollouts eval')
+            eval_video_paths = utils.sample_n_trajectories(self.env, eval_policy, MAX_NVIDEO, MAX_VIDEO_LEN, True)
+
+            #save train/eval videos
+            print('\nSaving train rollouts as videos...')
+            self.logger.log_paths_as_videos(train_video_paths, itr, fps=self.fps, max_videos_to_save=MAX_NVIDEO,
+                                            video_title='train_rollouts')
+            self.logger.log_paths_as_videos(eval_video_paths, itr, fps=self.fps,max_videos_to_save=MAX_NVIDEO,
+                                             video_title='eval_rollouts')
+
+        #######################
+
+        # save eval metrics
+        if self.logmetrics:
+            # returns, for logging
+            train_returns = [path["reward"].sum() for path in paths]
+            eval_returns = [eval_path["reward"].sum() for eval_path in eval_paths]
+
+            # episode lengths, for logging
+            train_ep_lens = [len(path["reward"]) for path in paths]
+            eval_ep_lens = [len(eval_path["reward"]) for eval_path in eval_paths]
+
+            # decide what to log
+            logs = OrderedDict()
+            logs["Eval_AverageReturn"] = np.mean(eval_returns)
+            logs["Eval_StdReturn"] = np.std(eval_returns)
+            logs["Eval_MaxReturn"] = np.max(eval_returns)
+            logs["Eval_MinReturn"] = np.min(eval_returns)
+            logs["Eval_AverageEpLen"] = np.mean(eval_ep_lens)
+
+            logs["Train_AverageReturn"] = np.mean(train_returns)
+            logs["Train_StdReturn"] = np.std(train_returns)
+            logs["Train_MaxReturn"] = np.max(train_returns)
+            logs["Train_MinReturn"] = np.min(train_returns)
+            logs["Train_AverageEpLen"] = np.mean(train_ep_lens)
+
+            logs["Train_EnvstepsSoFar"] = self.total_envsteps
+            logs["TimeSinceStart"] = time.time() - self.start_time
+            logs.update(last_log)
+
+            if itr == 0:
+                self.initial_return = np.mean(train_returns)
+            logs["Initial_DataCollection_AverageReturn"] = self.initial_return
+
+            # perform the logging
+            for key, value in logs.items():
+                print('{} : {}'.format(key, value))
+                self.logger.log_scalar(value, key, itr)
+            print('Done logging...\n\n')
+
+            self.logger.flush()
