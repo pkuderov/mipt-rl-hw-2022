@@ -2,7 +2,7 @@
 
 You can run this code on your own machine or on Google Colab.
 
-1. **Local option:** If you choose to run locally, you will need to install MuJoCo and some Python packages; see HW2 [installation.md](../hw2/installation.md). If you completed the installation for homework 1 before, you will find only small additional installation step.
+1. **Local option:** If you choose to run locally, you will need to install MuJoCo and some Python packages; see HW2 [installation.md](installation.md). If you completed the installation for homework 1 before, you will find only small additional installation step.
 2. **Colab:** The first few sections of the notebook will install all required dependencies. You can try out the Colab option by clicking the badge below:
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/pkuderov/mipt-rl-hw-2022/blob/main/hw2/hw2/scripts/run_hw2.ipynb)
@@ -23,6 +23,8 @@ You will then need to complete the following new files for homework 2. The relev
 You will also want to look through [scripts/run_hw2.py](hw2/scripts/run_hw2.py) (if running locally) or [scripts/run_hw2.ipynb](hw2/scripts/run_hw2.ipynb) (if running on Colab), though you will not need to edit this files beyond changing runtime arguments in the Colab notebook.
 
 You will be running your policy gradients implementation in five experiments total, investigating the effects of design decisions like reward-to-go estimators, neural network baselines and generalized advantage estimation for variance reduction, and advantage normalization. See the [assignment PDF](cs285_hw2.pdf) for more details. Commands to run the experiments are presented below.
+
+## Experiments
 
 ### Experiment 1: CartPole
 
