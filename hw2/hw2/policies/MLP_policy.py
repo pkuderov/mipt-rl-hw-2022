@@ -9,8 +9,8 @@ import numpy as np
 import torch
 from torch import distributions
 
-from cds_rl.infrastructure import pytorch_util as ptu
-from cds_rl.policies.base_policy import BasePolicy
+from hw2.infrastructure import pytorch_util as ptu
+from hw2.policies.base_policy import BasePolicy
 from hw2.infrastructure.utils import normalize, unnormalize
 
 
