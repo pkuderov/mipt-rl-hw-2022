@@ -104,7 +104,7 @@ def Path(obs, image_obs, acs, rewards, next_obs, terminals):
             "terminal": np.array(terminals, dtype=np.float32)}
 
 
-def convert_listofrollouts(paths, concat_rew=True):
+def convert_listofrollouts(paths):
     """
         Take a list of rollout dictionaries
         and return separate arrays,
@@ -112,13 +112,11 @@ def convert_listofrollouts(paths, concat_rew=True):
     """
     observations = np.concatenate([path["observation"] for path in paths])
     actions = np.concatenate([path["action"] for path in paths])
-    if concat_rew:
-        rewards = np.concatenate([path["reward"] for path in paths])
-    else:
-        rewards = [path["reward"] for path in paths]
     next_observations = np.concatenate([path["next_observation"] for path in paths])
     terminals = np.concatenate([path["terminal"] for path in paths])
-    return observations, actions, rewards, next_observations, terminals
+    concatenated_rewards = np.concatenate([path["reward"] for path in paths])
+    unconcatenated_rewards = [path["reward"] for path in paths]
+    return observations, actions, next_observations, terminals, concatenated_rewards, unconcatenated_rewards
 
 ############################################
 ############################################
