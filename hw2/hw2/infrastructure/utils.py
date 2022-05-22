@@ -1,5 +1,6 @@
 import numpy as np
 import time
+import copy
 
 
 def sample_trajectory(env, policy, max_path_length, render=False, render_mode=('rgb_array')):
@@ -124,3 +125,24 @@ def convert_listofrollouts(paths, concat_rew=True):
 
 def get_pathlength(path):
     return len(path["reward"])
+
+def normalize(data, mean, std, eps=1e-8):
+    return (data-mean)/(std+eps)
+
+def unnormalize(data, mean, std):
+    return data*std+mean
+
+def add_noise(data_inp, noiseToSignal=0.01):
+
+    data = copy.deepcopy(data_inp)
+
+    mean_data = np.mean(data, axis=0)
+
+    mean_data[mean_data == 0] = 0.000001
+
+    std_of_noise = mean_data * noiseToSignal
+    for j in range(mean_data.shape[0]):
+        data[:, j] = np.copy(data[:, j] + np.random.normal(
+            0, np.absolute(std_of_noise[j]), (data.shape[0],)))
+
+    return data
