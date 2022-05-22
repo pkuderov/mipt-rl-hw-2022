@@ -7,6 +7,9 @@ from torch import nn, optim
 
 from hw3.infrastructure import pytorch_util as ptu
 from hw3.policies.base_policy import BasePolicy
+from hw3.infrastructure.utils import normalize, unnormalize
+
+from torch import distributions
 
 
 class MLPPolicy(BasePolicy, nn.Module, metaclass=abc.ABCMeta):
@@ -148,8 +151,43 @@ class MLPPolicy(BasePolicy, nn.Module, metaclass=abc.ABCMeta):
 #####################################################
 #####################################################
 
+class MLPPolicyPG(MLPPolicy):
+    def __init__(self, ac_dim, ob_dim, n_layers, size, **kwargs):
+        super().__init__(ac_dim, ob_dim, n_layers, size, **kwargs)
+        self.baseline_loss = nn.MSELoss()
 
-class MLPPolicyAC(MLPPolicy):
-    def update(self, observations, actions, adv_n=None):
-        # TODO: update the policy and return the loss
-        return loss.item()
+    def update(self, observations, actions, advantages, q_values=None):
+        observations = ptu.from_numpy(observations)
+        actions = ptu.from_numpy(actions)
+        advantages = ptu.from_numpy(advantages)
+
+        self.optimizer.zero_grad()
+        forward_return = self.forward(observations)
+        log_prob = forward_return.log_prob(actions)
+        loss = torch.sum(-log_prob * advantages)
+        loss.backward()
+
+        if self.nn_baseline:
+            self.baseline_optimizer.zero_grad()
+            baseline_pred = self.baseline(observations).squeeze()
+            baseline_target = ptu.from_numpy(normalize(q_values, np.mean(q_values), np.mean(q_values)))
+            baseline_loss = self.baseline_loss(baseline_pred, baseline_target)
+            baseline_loss.backward()
+            self.baseline_optimizer.step()
+
+        self.optimizer.step()
+
+        train_log = {'Training Loss': ptu.to_numpy(loss),}
+        return train_log
+
+    def run_baseline_prediction(self, observations):
+        observations = ptu.from_numpy(observations)
+        pred = self.baseline(observations)
+        return ptu.to_numpy(pred.squeeze())
+
+
+class MLPPolicyAC(MLPPolicyPG):
+    def __init__(self, *args, **kwargs):
+        if 'nn_baseline' in kwargs.keys():
+            assert kwargs['nn_baseline'] == False, "MLPPolicyAC should not use the nn_baseline flag"
+        super().__init__(*args, **kwargs)
