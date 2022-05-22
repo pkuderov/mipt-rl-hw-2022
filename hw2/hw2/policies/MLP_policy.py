@@ -68,6 +68,21 @@ class MLPPolicy(BasePolicy, nn.Module, metaclass=abc.ABCMeta):
                 self.learning_rate
             )
 
+        if nn_baseline:
+            self.baseline = ptu.build_mlp(
+                input_size=self.ob_dim,
+                output_size=1,
+                n_layers=self.n_layers,
+                size=self.size,
+            )
+            self.baseline.to(ptu.device)
+            self.baseline_optimizer = optim.Adam(
+                self.baseline.parameters(),
+                self.learning_rate,
+            )
+        else:
+            self.baseline = None
+
     ##################################
 
     def save(self, filepath):
@@ -133,6 +148,8 @@ class MLPPolicy(BasePolicy, nn.Module, metaclass=abc.ABCMeta):
             action = self.forward(observation).sample()
         action = ptu.to_numpy(action)
         return action
+
+
 
 
 #####################################################
