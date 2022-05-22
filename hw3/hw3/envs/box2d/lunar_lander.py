@@ -401,7 +401,7 @@ class LunarLander(gym.Env):
         try:
             from gym.envs.classic_control import rendering
         except:
-            print('[ cs285/envs/box2d/lunar_lander ] No display found; rendering is disabled')
+            print('[ hw3/envs/box2d/lunar_lander ] No display found; rendering is disabled')
             return np.zeros((10, 10, 3)).astype(np.uint)
 
         if self.viewer is None:

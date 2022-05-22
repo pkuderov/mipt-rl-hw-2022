@@ -64,7 +64,7 @@ class DQNAgent(object):
                 # `frame_history_len` observations using functionality from the replay buffer,
                 # and then use those observations as input to your actor. 
             obs_ = self.replay_buffer.encode_recent_observation()
-            obs_ = torch.tensor(obs_[None, :]).to(self.device) #???
+            obs_ = ptu.from_numpy(obs_[None, :]) #???
             action = self.actor.get_action(obs_)
         
         # TODO take a step in the environment using the action from the policy
