@@ -16,6 +16,8 @@ from hw3.infrastructure.dqn_utils import (
 )
 from hw3.infrastructure.logger import Logger
 
+import pickle
+
 # how many rollouts to save as videos to tensorboard
 MAX_NVIDEO = 2
 MAX_VIDEO_LEN = 40 # we overwrite this in the code below
@@ -209,11 +211,28 @@ class RL_Trainer(object):
         """
         # TODO: get this from hw1 or hw2
 
+        if itr == 0 and initial_expertdata:
+            with open(initial_expertdata, 'rb') as fp:
+                loaded_paths = pickle.load(fp) #???
+            return loaded_paths, 0, None
+        print("\nCollecting data to be used for training...")
+        paths, envsteps_this_batch = utils.sample_trajectories(self.env, collect_policy, num_transitions_to_sample, self.params['ep_len'])
+        train_video_paths = None
+        if self.logvideo:
+            print('\nCollecting train rollouts to be used for saving videos...')
+            train_video_paths = utils.sample_n_trajectories(self.env, collect_policy, MAX_NVIDEO, MAX_VIDEO_LEN, True)
+
         return paths, envsteps_this_batch, train_video_paths
 
     def train_agent(self):
         # TODO: get this from hw1 or hw2
-        ...
+        print('\nTraining agent using sampled data from replay buffer...')
+        all_logs = []
+        for train_step in range(self.params['num_agent_train_steps_per_iter']):
+            ob_batch, ac_batch, re_batch, next_ob_batch, terminal_batch = self.agent.sample(self.params['train_batch_size'])
+            train_log = self.agent.train(ob_batch, ac_batch, re_batch, next_ob_batch, terminal_batch)
+            all_logs.append(train_log)
+        return all_logs
 
     ####################################
     ####################################

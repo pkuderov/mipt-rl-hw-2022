@@ -6,7 +6,7 @@ from hw3.critics.bootstrapped_continuous_critic import \
 from hw3.infrastructure.replay_buffer import ReplayBuffer
 from hw3.infrastructure.utils import *
 from hw3.policies.MLP_policy import MLPPolicyAC
-
+from hw3.infrastructure import pytorch_util as ptu
 
 class ACAgent(BaseAgent):
     def __init__(self, env, agent_params):
@@ -41,8 +41,16 @@ class ACAgent(BaseAgent):
         #     update the actor
 
         loss = OrderedDict()
-        loss['Critic_Loss'] = TODO
-        loss['Actor_Loss'] = TODO
+        # loss['Critic_Loss'] = TODO
+        # loss['Actor_Loss'] = TODO
+
+        for _ in range(self.num_critic_updates_per_agent_update):
+            loss['Critic_Loss'] = self.critic.update(ob_no, next_ob_no, re_n, terminal_n)
+
+        adv_n = self.estimate_advantage(ob_no, next_ob_no, re_n, terminal_n) 
+
+        for _ in range(self.num_actor_updates_per_agent_update):
+            loss['Actor_Loss'] = self.actor.update(ob_no, ac_na, adv_n)          
 
         return loss
 
@@ -53,7 +61,13 @@ class ACAgent(BaseAgent):
         # 3) estimate the Q value as Q(s, a) = r(s, a) + gamma*V(s')
         # HINT: Remember to cut off the V(s') term (ie set it to 0) at terminal states (ie terminal_n=1)
         # 4) calculate advantage (adv_n) as A(s, a) = Q(s, a) - V(s)
-        adv_n = TODO
+        # adv_n = TODO
+
+        value = self.critic.value_func(ob_no)
+        next_value = self.critic.value_func(next_ob_no).squeeze() * (1 - terminal_n)
+        q_n = re_n + self.gamma * next_value
+        adv_n = q_n - value
+        adv_n = ptu.to_numpy(adv_n)
 
         if self.standardize_advantages:
             adv_n = (adv_n - np.mean(adv_n)) / (np.std(adv_n) + 1e-8)
