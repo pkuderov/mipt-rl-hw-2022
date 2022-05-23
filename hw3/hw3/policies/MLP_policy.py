@@ -84,7 +84,13 @@ class MLPPolicy(BasePolicy, nn.Module, metaclass=abc.ABCMeta):
     # query the policy with observation(s) to get selected action(s)
     def get_action(self, obs: np.ndarray) -> np.ndarray:
         # TODO: get this from hw1 or hw2
-        return action
+        if len(obs.shape) > 1:
+            observation = obs
+        else:
+            observation = obs[None]
+
+        observation = ptu.to_numpy(self.forward(ptu.from_numpy(observation)).sample())
+        return observation
 
     # update/train this policy
     def update(self, observations, actions, **kwargs):
@@ -97,7 +103,14 @@ class MLPPolicy(BasePolicy, nn.Module, metaclass=abc.ABCMeta):
     # `torch.distributions.Distribution` object. It's up to you!
     def forward(self, observation: torch.FloatTensor):
         # TODO: get this from hw1 or hw2
-        return action_distribution
+        if self.discrete:
+            return torch.distributions.Categorical(logits=self.logits_na(observation))
+        else:
+            assert self.logstd is not None
+            return torch.distributions.Normal(
+                self.mean_net(observation),
+                torch.exp(self.logstd)[None],
+            )
 
 
 #####################################################
@@ -107,4 +120,17 @@ class MLPPolicy(BasePolicy, nn.Module, metaclass=abc.ABCMeta):
 class MLPPolicyAC(MLPPolicy):
     def update(self, observations, actions, adv_n=None):
         # TODO: update the policy and return the loss
+        observations = ptu.from_numpy(observations)
+        actions = ptu.from_numpy(actions)
+
+        predicted_actions = self(observations)
+
+        log_probs: torch.Tensor = predicted_actions.log_prob(actions)
+        if not self.discrete:
+            log_probs = log_probs.sum(1)
+        loss = -(log_probs * adv_n).sum()
+
+        self.optimizer.zero_grad()
+        loss.backward()
+        self.optimizer.step()
         return loss.item()
