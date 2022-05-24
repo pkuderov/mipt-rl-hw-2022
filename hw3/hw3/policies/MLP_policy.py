@@ -121,19 +121,13 @@ class MLPPolicy(BasePolicy, nn.Module, metaclass=abc.ABCMeta):
     # `torch.distributions.Distribution` object. It's up to you!
     def forward(self, observation: torch.FloatTensor):
         if self.discrete:
-            logits = self.logits_na(observation)
-            action_distribution = distributions.Categorical(logits=logits)
-            return action_distribution
+            return torch.distributions.Categorical(logits=self.logits_na(observation))
         else:
-            batch_mean = self.mean_net(observation)
-            scale_tril = torch.diag(torch.exp(self.logstd))
-            batch_dim = batch_mean.shape[0]
-            batch_scale_tril = scale_tril.repeat(batch_dim, 1, 1)
-            action_distribution = distributions.MultivariateNormal(
-                batch_mean,
-                scale_tril=batch_scale_tril,
+            assert self.logstd is not None
+            return torch.distributions.Normal(
+                self.mean_net(observation),
+                torch.exp(self.logstd)[None],
             )
-            return action_distribution
 
     def get_action(self, obs: np.ndarray) -> np.ndarray:
         if len(obs.shape) > 1:
