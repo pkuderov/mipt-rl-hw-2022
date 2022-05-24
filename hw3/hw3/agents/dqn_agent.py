@@ -89,9 +89,9 @@ class DQNAgent(object):
             # TODO fill in the call to the update function using the appropriate tensors
             log = self.critic.update(ob_no, ac_na, re_n, next_ob_no, terminal_n)
 
-            # TODO: load newest parameters into the target network
+
             if self.num_param_updates % self.target_update_freq == 0:
-                self.critic.target_Q_func.load_state_dict(self.critic.Q_func.state_dict())
+                self.critic.update_target_network()
 
             self.num_param_updates += 1
 
