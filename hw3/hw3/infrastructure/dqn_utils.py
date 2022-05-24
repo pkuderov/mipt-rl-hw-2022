@@ -30,7 +30,7 @@ def register_custom_envs():
     if 'LunarLander-v3' not in registry.env_specs:
         register(
             id='LunarLander-v3',
-            entry_point='cs285.envs.box2d.lunar_lander:LunarLander',
+            entry_point='hw3.envs.box2d.lunar_lander:LunarLander',
             max_episode_steps=1000,
             reward_threshold=200,
         )
@@ -39,10 +39,10 @@ def register_custom_envs():
 def get_env_kwargs(env_name):
     if env_name in ['MsPacman-v0', 'PongNoFrameskip-v4']:
         kwargs = {
-            'learning_starts': 50000,
+            'learning_starts': 1000,
             'target_update_freq': 10000,
             'replay_buffer_size': int(1e6),
-            'num_timesteps': int(2e8),
+            'num_timesteps': 500000,
             'q_func': create_atari_q_network,
             'learning_freq': 4,
             'grad_norm_clipping': 10,
@@ -122,7 +122,6 @@ def atari_exploration_schedule(num_timesteps):
     return PiecewiseSchedule(
         [
             (0, 1.0),
-            (1e6, 0.1),
             (num_timesteps / 8, 0.01),
         ], outside_value=0.01
     )
@@ -162,7 +161,7 @@ def lander_optimizer():
     return OptimizerSpec(
         constructor=optim.Adam,
         optim_kwargs=dict(
-            lr=1,
+            lr=0.95,
         ),
         learning_rate_schedule=lambda epoch: 1e-3,  # keep init learning rate
     )
