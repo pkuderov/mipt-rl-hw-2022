@@ -40,46 +40,33 @@ class DQNAgent(object):
 
         eps = self.exploration.value(self.t)
 
-        perform_random_action = (self.t < self.learning_starts) or (np.random.random() < eps)
-
+        perform_random_action = (np.random.random() < eps) or (self.t < self.learning_starts)
         if perform_random_action:
             action = np.random.randint(self.num_actions)
         else:
-            enc_last_obs = self.replay_buffer.encode_recent_observation()
-            enc_last_obs = torch.tensor(enc_last_obs[None, :]).to(self.device)
+            encoded_recent_observation = self.replay_buffer.encode_recent_observation()
+            action = self.actor.get_action(encoded_recent_observation)
 
-            # TODO query the policy with enc_last_obs to select action
-            action = self.actor.get_action(enc_last_obs)
-
-        # TODO take a step in the environment using the action from the policy
-        # HINT1: remember that self.last_obs must always point to the newest/latest observation
-        # HINT2: remember the following useful function that you've seen before:
-            #obs, reward, done, info = env.step(action)
         obs, reward, done, info = self.env.step(action)
+        self.last_obs = obs
 
         # TODO store the result of taking this action into the replay buffer
-        # HINT1: see replay buffer's store_effect function
+        # HINT1: see your replay buffer's `store_effect` function
         # HINT2: one of the arguments you'll need to pass in is self.replay_buffer_idx from above
         self.replay_buffer.store_effect(self.replay_buffer_idx, action, reward, done)
 
         # TODO if taking this step resulted in done, reset the env (and the latest observation)
         if done:
-            self.last_obs = self.env.reset()
-        else:
+            self.env.reset()
             self.last_obs = obs
 
     def sample(self, batch_size):
         if self.replay_buffer.can_sample(self.batch_size):
             return self.replay_buffer.sample(batch_size)
         else:
-            return [],[],[],[],[]
+            return [], [], [], [], []
 
     def train(self, ob_no, ac_na, re_n, next_ob_no, terminal_n):
-
-        """
-            Here, you should train the DQN agent.
-            This consists of training the critic, as well as periodically updating the target network.
-        """
         log = {}
         if (self.t > self.learning_starts
                 and self.t % self.learning_freq == 0
@@ -87,14 +74,16 @@ class DQNAgent(object):
         ):
 
             # TODO fill in the call to the update function using the appropriate tensors
-            log = self.critic.update(ob_no, ac_na, re_n, next_ob_no, terminal_n)
+            log = self.critic.update(
+                ob_no, ac_na, re_n, next_ob_no, terminal_n
+            )
 
-
+            # TODO update the target network periodically
+            # HINT: your critic already has this functionality implemented
             if self.num_param_updates % self.target_update_freq == 0:
                 self.critic.update_target_network()
 
             self.num_param_updates += 1
 
         self.t += 1
-
         return log
