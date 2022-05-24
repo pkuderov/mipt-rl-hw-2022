@@ -6,6 +6,7 @@ import torch
 from torch import distributions
 from torch import nn
 from torch import optim
+from hw2.infrastructure.utils import normalize
 
 from hw2.infrastructure import pytorch_util as ptu
 from hw2.policies.base_policy import BasePolicy
@@ -157,7 +158,9 @@ class MLPPolicyPG(MLPPolicy):
         loss = -torch.sum(dist.log_prob(actions) * advantages)
         loss.backward()
         self.optimizer.step()
-        
+        print("############3DEBUG policy:############")
+        print("baseline:", self.nn_baseline)
+        print("############3DEBUG policy:############")
         if self.nn_baseline:
             ## TODO: update the neural network baseline using the q_values as
             ## targets. The q_values should first be normalized to have a mean
@@ -168,7 +171,10 @@ class MLPPolicyPG(MLPPolicy):
             ## HINT2: You will need to convert the targets into a tensor using
                 ## ptu.from_numpy before using it in the loss
 
-            pass
+            self.baseline_optimizer.zero_grad()
+            q_values = normalize(q_values, np.mean(q_values), np.mean(q_values))
+            q_values = ptu.from_numpy(q_values)
+            bloss = self.baseline_loss(self.baseline(observations.to(ptu.device)).squeeze(), q_values)
 
         train_log = {
             'Training Loss': ptu.to_numpy(loss),

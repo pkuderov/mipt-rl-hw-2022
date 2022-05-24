@@ -74,7 +74,7 @@ def main():
     #parser.add_argument('--batch_size', '-b', type=int, default=100) #steps collected per train iteration
 
     #DEBUG
-    parser.add_argument('--eval_batch_size', '-eb', type=int, default=400) #steps collected per eval iteration
+    parser.add_argument('--eval_batch_size', '-eb', type=int, default=200) #steps collected per eval iteration
     #parser.add_argument('--eval_batch_size', '-eb', type=int, default=20) #steps collected per eval iteration
     parser.add_argument('--train_batch_size', '-tb', type=int, default=1000) ##steps used per gradient step
     #parser.add_argument('--train_batch_size', '-tb', type=int, default=80) ##steps used per gradient step
