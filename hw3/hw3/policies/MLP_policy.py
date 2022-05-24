@@ -186,8 +186,17 @@ class MLPPolicyPG(MLPPolicy):
         return ptu.to_numpy(pred.squeeze())
 
 
-class MLPPolicyAC(MLPPolicyPG):
-    def __init__(self, *args, **kwargs):
-        if 'nn_baseline' in kwargs.keys():
-            assert kwargs['nn_baseline'] == False, "MLPPolicyAC should not use the nn_baseline flag"
-        super().__init__(*args, **kwargs)
+class MLPPolicyAC(MLPPolicy):
+
+    def update(self, observations, actions, adv_n=None):
+        observations = ptu.from_numpy(observations)
+        actions = ptu.from_numpy(actions)
+        predicted_actions = self(observations)
+        log_probs: torch.Tensor = predicted_actions.log_prob(actions)
+        if not self.discrete:
+            log_probs = log_probs.sum(1)
+        loss = -(log_probs * adv_n).sum()
+        self.optimizer.zero_grad()
+        loss.backward()
+        self.optimizer.step()
+        return loss.item()
