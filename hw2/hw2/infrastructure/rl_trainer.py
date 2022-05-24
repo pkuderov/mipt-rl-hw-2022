@@ -4,6 +4,7 @@ from collections import OrderedDict
 import gym
 import numpy as np
 import torch
+import pickle
 
 from hw2.infrastructure import pytorch_util as ptu
 from hw2.infrastructure import utils
@@ -151,9 +152,73 @@ class RL_Trainer(object):
 
     def collect_training_trajectories(self, itr, initial_expertdata, collect_policy, batch_size):
         # TODO: GETTHIS from HW1
+        print("\nCollecting data to be used for training...")
+        if itr == 0:
+          #print("load exp data:", load_initial_expertdata)
+          if initial_expertdata:
+            with open(initial_expertdata, 'rb') as f:
+                loaded_paths = pickle.load(f)
+                return loaded_paths, 0, None
+
+        paths, envsteps_this_batch = utils.sample_trajectories(env=self.env, 
+                                                               policy=collect_policy,
+                                                min_timesteps_per_batch=batch_size,
+                                                 max_path_length=self.params['ep_len']
+                                                               )
+
+        
+        #DEBUG
+        #print("####DEBUG#############")
+        #print("ep_len", self.params['ep_len'])
+        #print(len(paths))
+        #print(len(paths[0]['reward']), len(paths[1]['reward']), len(paths[2]['reward']))
+        #print("batch size", batch_size)
+        #print("####DEBUG#############")
+
+
+        # collect more rollouts with the same policy, to be saved as videos in tensorboard
+        # note: here, we collect MAX_NVIDEO rollouts, each of length MAX_VIDEO_LEN
+        train_video_paths = None
+        if self.logvideo:
+            print('\nCollecting train rollouts to be used for saving videos...')
+            ## TODO look in utils and implement sample_n_trajectories
+            train_video_paths = utils.sample_n_trajectories(self.env, collect_policy, MAX_NVIDEO, MAX_VIDEO_LEN, True)
+            #print("DEBUG")
+            #print(train_video_paths[1]['image_obs'])
+
+        return paths, envsteps_this_batch, train_video_paths
 
     def train_agent(self):
         # TODO: GETTHIS from HW1
+        print('\nTraining agent using sampled data from replay buffer...')
+        all_logs = []
+        for train_step in range(self.params['num_agent_train_steps_per_iter']):
+            # TODO sample some data from the data buffer
+            # HINT1: use the agent's sample function
+            # HINT2: how much data = self.params['train_batch_size']
+            ob_batch, ac_batch, re_batch, next_ob_batch, terminal_batch = \
+                  self.agent.sample(batch_size=self.params['train_batch_size'])
+
+
+            # TODO use the sampled data to train an agent
+            # HINT: use the agent's train function
+            # HINT: keep the agent's training log for debugging
+
+            #DEBUG
+            print("##############DEBUG train batch")
+            print("obs", ob_batch.shape)
+            print("acs", ac_batch.shape)
+            count_rews = 0
+            for roll in re_batch:
+                count_rews += len(roll)
+            print("rews", count_rews)
+            print(self.params['train_batch_size'])
+            print("##############DEBUG train batch")
+
+            train_log = self.agent.train(ob_batch, ac_batch, 
+                                        re_batch, next_ob_batch, terminal_batch)
+            all_logs.append(train_log)
+        return all_logs
 
     ####################################
     ####################################

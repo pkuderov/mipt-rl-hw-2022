@@ -59,25 +59,15 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--env_name', type=str)
     parser.add_argument('--exp_name', type=str, default='todo')
-
-    #DEBUG
-    #parser.add_argument('--n_iter', '-n', type=int, default=200)    
-    parser.add_argument('--n_iter', '-n', type=int, default=100)    
+    parser.add_argument('--n_iter', '-n', type=int, default=200)
 
     parser.add_argument('--reward_to_go', '-rtg', action='store_true')
     parser.add_argument('--nn_baseline', action='store_true')
     parser.add_argument('--gae_lambda', type=float, default=None)
     parser.add_argument('--dont_standardize_advantages', '-dsa', action='store_true')
-
-    #DEBUG
     parser.add_argument('--batch_size', '-b', type=int, default=1000) #steps collected per train iteration
-    #parser.add_argument('--batch_size', '-b', type=int, default=100) #steps collected per train iteration
-
-    #DEBUG
     parser.add_argument('--eval_batch_size', '-eb', type=int, default=400) #steps collected per eval iteration
-    #parser.add_argument('--eval_batch_size', '-eb', type=int, default=20) #steps collected per eval iteration
     parser.add_argument('--train_batch_size', '-tb', type=int, default=1000) ##steps used per gradient step
-    #parser.add_argument('--train_batch_size', '-tb', type=int, default=80) ##steps used per gradient step
 
     parser.add_argument('--num_agent_train_steps_per_iter', type=int, default=1)
     parser.add_argument('--discount', type=float, default=1.0)
@@ -109,17 +99,14 @@ def main():
     ### CREATE DIRECTORY FOR LOGGING
     ##################################
 
-    #logdir_prefix = 'q2_pg_'  # keep for autograder
-    #logdir_prefix = 'q1_sb_'  
-    logdir_prefix = 'temp_1_'  
+    logdir_prefix = 'q2_pg_'  # keep for autograder
 
     data_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../data')
 
     if not (os.path.exists(data_path)):
         os.makedirs(data_path)
 
-    logdir = logdir_prefix + args.exp_name + \
-        '_' + args.env_name + '_' + time.strftime("%d-%m-%Y_%H-%M-%S")
+    logdir = logdir_prefix + args.exp_name + '_' + args.env_name + '_' + time.strftime("%d-%m-%Y_%H-%M-%S")
     logdir = os.path.join(data_path, logdir)
     params['logdir'] = logdir
     if not(os.path.exists(logdir)):
@@ -130,7 +117,6 @@ def main():
     ###################
 
     trainer = PG_Trainer(params)
-    print("DEBUG before run")
     trainer.run_training_loop()
 
 
