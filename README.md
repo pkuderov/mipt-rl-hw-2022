@@ -7,12 +7,13 @@ tensorboard --logdir="../../data" --host localhost --port 8088
 
 2.3 
 Cart-Pole экспермент:
+![Image alt](https://github.com/Gricha1/mipt-rl-hw-2022/HW_2_Gorbov/images/image.png)
 Команда для запуска обучения:
 
 python run_hw2.py --env_name CartPole-v0
 
 Графики средней отдачи при маленьком батче(train_batch = 100, eval_batch = 20)
-![Image alt](https://github.com/Gricha1/mipt-rl-hw-2022/raw/HW_2_Gorbov/images/2.3_small_batch_val.png.png)
+
 
 
 Графики средней отдачи при большом батче(train_batch = 1000, eval_batch = 400)
