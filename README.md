@@ -17,7 +17,7 @@ python run_hw2.py --env_name CartPole-v0
 
 
 Графики средней отдачи при большом батче(train_batch = 1000, eval_batch = 400)
-![Image alt](https://github.com/Gricha1/mipt-rl-hw-2022/raw/HW_2_Gorbov/images/2.3_big_batch_val.png)
+![Image alt](https://github.com/Gricha1/mipt-rl-hw-2022/raw/HW_2_Gorbov/images/2.3_big_batch_eval.png)
 ![Image alt](https://github.com/Gricha1/mipt-rl-hw-2022/raw/HW_2_Gorbov/images/2.3_big_batch_train.png)
 
 
@@ -38,6 +38,5 @@ python run_hw2.py --env_name LunarLanderContinuous-v2 --nn_baseline --reward_to_
 
 средняя отдача около 50 (train_batch = 1000, eval_batch = 400)
 ![Image alt](https://github.com/Gricha1/mipt-rl-hw-2022/raw/HW_2_Gorbov/images/2.3_luna_batch_eval.png)
-![Image alt](https://github.com/Gricha1/mipt-rl-hw-2022/raw/HW_2_Gorbov/images/2.3_luna_batch_train.png)
 
 Gae выполнен в виде кода.
