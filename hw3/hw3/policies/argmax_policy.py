@@ -10,4 +10,4 @@ class ArgMaxPolicy(object):
             observation = obs
         else:
             observation = obs[None]
-        return self.critic.Q_func(observation).squeeze().argmax().item()
+        return self.critic.qa_values(observation).argmax().squeeze()
