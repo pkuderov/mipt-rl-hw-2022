@@ -9,7 +9,7 @@ from torch import optim
 
 from hw2.infrastructure import pytorch_util as ptu
 from hw2.policies.base_policy import BasePolicy
-
+from hw2.infrastructure.utils import normalize, unnormalize
 
 class MLPPolicy(BasePolicy, nn.Module, metaclass=abc.ABCMeta):
 
@@ -92,7 +92,16 @@ class MLPPolicy(BasePolicy, nn.Module, metaclass=abc.ABCMeta):
 
     # query the policy with observation(s) to get selected action(s)
     def get_action(self, obs: np.ndarray) -> np.ndarray:
-        # TODO: get this from HW1
+        if len(obs.shape) > 1:
+            observation = obs
+        else:
+            observation = obs[None]
+        # TODO return the action that the policy prescribes
+        observation = ptu.from_numpy(observation)
+        with torch.no_grad():
+            action = self.forward(observation).sample()
+        action = ptu.to_numpy(action)
+        return action
 
     # update/train this policy
     def update(self, observations, actions, **kwargs):
@@ -143,7 +152,11 @@ class MLPPolicyPG(MLPPolicy):
         # HINT4: use self.optimizer to optimize the loss. Remember to
             # 'zero_grad' first
 
-        TODO
+        self.optimizer.zero_grad()
+        forward_return = self.forward(observations)
+        log_prob = forward_return.log_prob(actions)
+        loss = torch.sum(-log_prob * advantages)
+        loss.backward()
 
         if self.nn_baseline:
             ## TODO: update the neural network baseline using the q_values as
@@ -155,7 +168,14 @@ class MLPPolicyPG(MLPPolicy):
             ## HINT2: You will need to convert the targets into a tensor using
                 ## ptu.from_numpy before using it in the loss
 
-            TODO
+            self.baseline_optimizer.zero_grad()
+            baseline_pred = self.baseline(observations).squeeze()
+            baseline_target = ptu.from_numpy(normalize(q_values, np.mean(q_values), np.mean(q_values)))
+            baseline_loss = self.baseline_loss(baseline_pred, baseline_target)
+            baseline_loss.backward()
+            self.baseline_optimizer.step()
+
+        self.optimizer.step()
 
         train_log = {
             'Training Loss': ptu.to_numpy(loss),
