@@ -234,7 +234,7 @@ class RL_Trainer(object):
         for train_step in range(self.params['num_agent_train_steps_per_iter']):
             ob_batch, ac_batch, re_batch, next_ob_batch, terminal_batch = self.agent.sample(
                 self.params['train_batch_size'])
-            train_log = self.agent.train(ob_batch, ac_batch, re_batch, next_ob_batch, terminal_batch)
+            train_log = self.agent.train(ob_batch, ac_batch, next_ob_batch, re_batch, terminal_batch)
             all_logs.append(train_log)
         return all_logs
 
