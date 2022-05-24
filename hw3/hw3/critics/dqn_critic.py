@@ -40,7 +40,7 @@ class DQNCritic(BaseCritic):
         self.q_net.to(ptu.device)
         self.q_net_target.to(ptu.device)
 
-    def update(self, ob_no, ac_na, reward_n, next_ob_no, terminal_n):
+    def update(self, ob_no, ac_na, next_ob_no, reward_n, terminal_n):
         """
             Update the parameters of the critic.
             let sum_of_path_lengths be the sum of the lengths of the paths sampled from
