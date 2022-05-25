@@ -6,7 +6,8 @@ from hw3.critics.bootstrapped_continuous_critic import \
 from hw3.infrastructure.replay_buffer import ReplayBuffer
 from hw3.infrastructure.utils import *
 from hw3.policies.MLP_policy import MLPPolicyAC
-
+from hw3.infrastructure import pytorch_util as ptu
+import torch
 
 class ACAgent(BaseAgent):
     def __init__(self, env, agent_params):
@@ -32,31 +33,39 @@ class ACAgent(BaseAgent):
 
     def train(self, ob_no, ac_na, re_n, next_ob_no, terminal_n):
         # TODO Implement the following pseudocode:
-        # for agent_params['num_critic_updates_per_agent_update'] steps,
-        #     update the critic
-
-        # advantage = estimate_advantage(...)
-
-        # for agent_params['num_actor_updates_per_agent_update'] steps,
-        #     update the actor
-
+        
+        for _ in range(self.agent_params['num_critic_updates_per_agent_update']):
+            Critic_Loss = self.critic.update(ob_no, ac_na, next_ob_no, re_n, terminal_n)
+        
+        advantage = self.estimate_advantage(ob_no, next_ob_no, re_n, terminal_n)
+        
+        for _ in range(self.agent_params['num_actor_updates_per_agent_update']):
+            Actor_Loss = self.actor.update(ob_no, ac_na, advantage)
+        
         loss = OrderedDict()
-        loss['Critic_Loss'] = TODO
-        loss['Actor_Loss'] = TODO
+        loss['Critic_Loss'] = Critic_Loss
+        loss['Actor_Loss'] = Actor_Loss
 
         return loss
 
     def estimate_advantage(self, ob_no, next_ob_no, re_n, terminal_n):
         # TODO Implement the following pseudocode:
         # 1) query the critic with ob_no, to get V(s)
+        ob_no = ptu.from_numpy(ob_no)
+        v_s = self.critic.forward(ob_no)
         # 2) query the critic with next_ob_no, to get V(s')
+        next_ob_no = ptu.from_numpy(next_ob_no)
+        next_v_s = self.critic.forward(next_ob_no)
         # 3) estimate the Q value as Q(s, a) = r(s, a) + gamma*V(s')
+        re_n = ptu.from_numpy(re_n)
+        terminal_n = ptu.from_numpy(terminal_n)
+        q = re_n + self.gamma * next_v_s * (1 - terminal_n)
         # HINT: Remember to cut off the V(s') term (ie set it to 0) at terminal states (ie terminal_n=1)
         # 4) calculate advantage (adv_n) as A(s, a) = Q(s, a) - V(s)
-        adv_n = TODO
+        adv_n = q-v_s
 
         if self.standardize_advantages:
-            adv_n = (adv_n - np.mean(adv_n)) / (np.std(adv_n) + 1e-8)
+            adv_n = (adv_n - torch.mean(adv_n)) / (torch.std(adv_n) + 1e-8)
         return adv_n
 
     def add_to_replay_buffer(self, paths):

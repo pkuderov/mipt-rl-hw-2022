@@ -30,7 +30,7 @@ def register_custom_envs():
     if 'LunarLander-v3' not in registry.env_specs:
         register(
             id='LunarLander-v3',
-            entry_point='cs285.envs.box2d.lunar_lander:LunarLander',
+            entry_point='hw3.envs.box2d.lunar_lander:LunarLander',
             max_episode_steps=1000,
             reward_threshold=200,
         )
@@ -63,7 +63,7 @@ def get_env_kwargs(env_name):
             'replay_buffer_size': 50000,
             'batch_size': 32,
             'gamma': 1.00,
-            'learning_starts': 1000,
+            'learning_starts': 10000,
             'learning_freq': 1,
             'frame_history_len': 1,
             'target_update_freq': 3000,
