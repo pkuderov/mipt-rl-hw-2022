@@ -32,7 +32,7 @@ class ReplayBuffer(object):
         # convert new rollouts into their component arrays, and append them onto our arrays
         observations, actions, rewards, next_observations, terminals = (
             convert_listofrollouts(paths, concat_rew))
-
+        
         if self.obs is None:
             self.obs = observations[-self.max_size:]
             self.acs = actions[-self.max_size:]
@@ -41,6 +41,7 @@ class ReplayBuffer(object):
             self.terminals = terminals[-self.max_size:]
         else:
             self.obs = np.concatenate([self.obs, observations])[-self.max_size:]
+            print(f'Actions shape: {actions.shape}\nSelf actions shape: {self.acs.shape}')
             self.acs = np.concatenate([self.acs, actions])[-self.max_size:]
             if concat_rew:
                 self.rews = np.concatenate(
@@ -74,7 +75,9 @@ class ReplayBuffer(object):
         # HINT 3: look at the sample_recent_data function below
 
         # return TODO, TODO, TODO, TODO, TODO
-        raise NotImplementedError()
+        # raise NotImplementedError()
+        idx = np.random.permutation(self.obs.shape[0])[:batch_size]
+        return (self.obs[idx], self.acs[idx], self.rews[idx], self.next_obs[idx], self.terminals[idx])
 
     def sample_recent_data(self, batch_size=1):
         return (
@@ -84,3 +87,4 @@ class ReplayBuffer(object):
             self.next_obs[-batch_size:],
             self.terminals[-batch_size:],
         )
+
