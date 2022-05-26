@@ -12,3 +12,4 @@ box2d-py
 
 # pip-only requirement
 opencv-python
+mujoco-py
