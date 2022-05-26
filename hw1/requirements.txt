@@ -1,5 +1,6 @@
 numpy
 gym
+gym[atari]
 tensorboard
 tensorboardX
 matplotlib
