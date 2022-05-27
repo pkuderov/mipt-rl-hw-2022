@@ -50,9 +50,9 @@ def build_mlp(
     # raise NotImplementedError
     layers = []
     inputs = [input_size] + [size] * (n_layers - 1)
-    print(f'Inputs sizes: {inputs}')
+    #print(f'Inputs sizes: {inputs}')
     outputs = [size] * n_layers
-    print(f'Outputs sizes: {outputs}')
+    #print(f'Outputs sizes: {outputs}')
     for i, o in zip(inputs, outputs):
         layers.append(nn.Linear(i,o))
         layers.append(activation)
