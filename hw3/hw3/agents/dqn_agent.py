@@ -64,7 +64,7 @@ class DQNAgent(object):
                 # `frame_history_len` observations using functionality from the replay buffer,
                 # and then use those observations as input to your actor. 
             obs_ = self.replay_buffer.encode_recent_observation()
-            obs_ = ptu.from_numpy(obs_[None, :]) #???
+            # obs_ = ptu.from_numpy(obs_) #???
             action = self.actor.get_action(obs_)
         
         # TODO take a step in the environment using the action from the policy
@@ -104,7 +104,7 @@ class DQNAgent(object):
             # TODO update the target network periodically 
             # HINT: your critic already has this functionality implemented
             if self.num_param_updates % self.target_update_freq == 0:
-                self.critic.q_net_target.load_state_dict(self.critic.q_net.state_dict()) #???
+                self.critic.update_target_network()
 
             self.num_param_updates += 1
 

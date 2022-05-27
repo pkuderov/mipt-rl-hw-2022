@@ -108,14 +108,14 @@ class MLPPolicy(BasePolicy, nn.Module, metaclass=abc.ABCMeta):
         # TODO: get this from hw1 or hw2
         if self.discrete:
             logits = self.logits_na(observation)
-            action_distribution = distributions.Categorical(logits=logits)
+            action_distribution = torch.distributions.Categorical(logits=logits)
             return action_distribution
         else:
             batch_mean = self.mean_net(observation)
             scale_tril = torch.diag(torch.exp(self.logstd))
             batch_dim = batch_mean.shape[0]
             batch_scale_tril = scale_tril.repeat(batch_dim, 1, 1)
-            action_distribution = distributions.MultivariateNormal(
+            action_distribution = torch.distributions.MultivariateNormal(
                 batch_mean,
                 scale_tril=batch_scale_tril,
             )
@@ -129,12 +129,15 @@ class MLPPolicy(BasePolicy, nn.Module, metaclass=abc.ABCMeta):
 class MLPPolicyAC(MLPPolicy):
     def update(self, observations, actions, adv_n=None):
         # TODO: update the policy and return the loss #???
-        policy_output = self.policy_mlp(ptu.from_numpy(observations))
-        logprob_pi = self.get_log_prob(policy_output, actions)
+        observations = ptu.from_numpy(observations)
+        actions = ptu.from_numpy(actions)
+        adv_n = ptu.from_numpy(adv_n)
+        policy_output = self(observations)
+        logprob_pi: torch.Tensor = policy_output.log_prob(actions)
 
         self.optimizer.zero_grad()
 
-        loss = torch.sum((-logprob_pi * ptu.from_numpy(adv_n)))
+        loss = torch.sum(-logprob_pi * adv_n)
         loss.backward()
 
         self.optimizer.step()

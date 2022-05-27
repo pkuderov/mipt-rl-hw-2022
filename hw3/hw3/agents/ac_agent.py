@@ -44,12 +44,12 @@ class ACAgent(BaseAgent):
         # loss['Critic_Loss'] = TODO
         # loss['Actor_Loss'] = TODO
 
-        for _ in range(self.num_critic_updates_per_agent_update):
+        for _ in range(self.agent_params['num_actor_updates_per_agent_update']):
             loss['Critic_Loss'] = self.critic.update(ob_no, next_ob_no, re_n, terminal_n)
 
-        adv_n = self.estimate_advantage(ob_no, next_ob_no, re_n, terminal_n) 
+        adv_n = self.estimate_advantage(ob_no, ac_na, next_ob_no, re_n, terminal_n)
 
-        for _ in range(self.num_actor_updates_per_agent_update):
+        for _ in range(self.agent_params['num_actor_updates_per_agent_update']):
             loss['Actor_Loss'] = self.actor.update(ob_no, ac_na, adv_n)          
 
         return loss
@@ -63,8 +63,13 @@ class ACAgent(BaseAgent):
         # 4) calculate advantage (adv_n) as A(s, a) = Q(s, a) - V(s)
         # adv_n = TODO
 
-        value = self.critic.value_func(ob_no)
-        next_value = self.critic.value_func(next_ob_no).squeeze() * (1 - terminal_n)
+        ob_no = ptu.from_numpy(ob_no)
+        next_ob_no = ptu.from_numpy(next_ob_no)
+        re_n = ptu.from_numpy(re_n)
+        terminal_n = ptu.from_numpy(terminal_n)
+
+        value = self.critic.forward(ob_no)
+        next_value = self.critic.forward(next_ob_no) * (1 - terminal_n)
         q_n = re_n + self.gamma * next_value
         adv_n = q_n - value
         adv_n = ptu.to_numpy(adv_n)

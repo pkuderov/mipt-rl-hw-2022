@@ -94,13 +94,13 @@ class BootstrappedContinuousCritic(nn.Module, BaseCritic):
 
         for update in range(self.num_grad_steps_per_target_update * self.num_target_updates):
             if update % self.num_grad_steps_per_target_update == 0:
-                next_value = self.value_func(next_ob_no).squeeze() * (1 - terminal_n)
+                next_value = self(next_ob_no) * (1 - terminal_n)
                 target_value = reward_n + self.gamma * next_value
+                target_value = target_value.detach()
 
             self.optimizer.zero_grad()
-            loss = nn.functional.mse_loss(self.value_func(ob_no).squeeze(), target_value)
+            loss = self.loss(self(ob_no), target_value)
             loss.backward()
             self.optimizer.step()
-            target_value.detach_()
 
         return loss.item()
