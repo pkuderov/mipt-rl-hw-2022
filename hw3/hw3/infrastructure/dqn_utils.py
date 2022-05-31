@@ -30,7 +30,7 @@ def register_custom_envs():
     if 'LunarLander-v3' not in registry.env_specs:
         register(
             id='LunarLander-v3',
-            entry_point='cs285.envs.box2d.lunar_lander:LunarLander',
+            entry_point='hw3.envs.box2d.lunar_lander:LunarLander',
             max_episode_steps=1000,
             reward_threshold=200,
         )
@@ -514,4 +514,5 @@ class MemoryOptimizedReplayBuffer(object):
         self.action[idx] = action
         self.reward[idx] = reward
         self.done[idx]   = done
+
 

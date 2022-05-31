@@ -5,6 +5,7 @@ from collections import OrderedDict
 
 import gym
 import numpy as np
+import pickle
 import torch
 from gym import wrappers
 
@@ -73,7 +74,7 @@ class RL_Trainer(object):
         self.env.seed(seed)
 
         # import plotting (locally if 'obstacles' env)
-        if not(self.params['env_name']=='obstacles-cs285-v0'):
+        if not(self.params['env_name']=='obstacles-hw3-v0'):
             import matplotlib
             matplotlib.use('Agg')
 
@@ -208,12 +209,34 @@ class RL_Trainer(object):
             train_video_paths: paths which also contain videos for visualization purposes
         """
         # TODO: get this from hw1 or hw2
+        print("\nCollecting data to be used for training...")
+        if itr == 0 and initial_expertdata:
+            with open(initial_expertdata, 'rb') as f:
+                paths = pickle.load(f)
+                return paths, 0, None
+
+        paths, envsteps_this_batch = utils.sample_trajectories(env=self.env, 
+                                                               policy=collect_policy,
+                                                min_timesteps_per_batch=num_transitions_to_sample,
+                                                max_path_length=self.params['ep_len']
+                                                               )
+        # collect more rollouts with the same policy, to be saved as videos in tensorboard
+        # note: here, we collect MAX_NVIDEO rollouts, each of length MAX_VIDEO_LEN
+        train_video_paths = None
+        if self.logvideo:
+            print('\nCollecting train rollouts to be used for saving videos...')
+            train_video_paths = utils.sample_n_trajectories(self.env, collect_policy, MAX_NVIDEO, MAX_VIDEO_LEN, True)
 
         return paths, envsteps_this_batch, train_video_paths
 
     def train_agent(self):
-        # TODO: get this from hw1 or hw2
-        ...
+        #print('\nTraining agent using sampled data from replay buffer...')
+        all_logs = []
+        for train_step in range(self.params['num_agent_train_steps_per_iter']):
+            ob_batch, ac_batch, re_batch, next_ob_batch, terminal_batch = self.agent.sample(batch_size=self.params['train_batch_size'])
+            train_log = self.agent.train(ob_batch, ac_batch, re_batch, next_ob_batch, terminal_batch)
+            all_logs.append(train_log)
+        return all_logs
 
     ####################################
     ####################################
@@ -316,3 +339,4 @@ class RL_Trainer(object):
             print('Done logging...\n\n')
 
             self.logger.flush()
+
