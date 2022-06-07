@@ -10,10 +10,12 @@ tensorboard --logdir="../../data" --host localhost --port 8088
 График Обучения для алгоритма DQN в среде Lunar.
 Измененный параметр 'learning_starts': 10000
 ![Image alt](https://github.com/Gricha1/mipt-rl-hw-2022/raw/HW_3_Gorbov/images/Lunar_DQN_1.png)
+
 2.2
 График DDQN. Измененный параметр 'learning_starts': 10000. Здесь можно заметить, что обновление весов 
 у target net лишь в конце эпизода помогает избегать резких скачков в графике и помогает сделать обучение более гладким.
 ![Image alt](https://github.com/Gricha1/mipt-rl-hw-2022/raw/HW_3_Gorbov/images/Lunar_DDQN_1.png)
+
 2.3
 График обучения DQN. Измененный параметр 'learning_starts': 10000. 'batch_size': 64.
 Здесь заметно, что увеличение размера батча способствовало более быстрой оптимизации функции вознаграждения(за меньшее число шагов)
@@ -27,7 +29,9 @@ tensorboard --logdir="../../data" --host localhost --port 8088
 
 python hw3/scripts/run_hw3_actor_critic.py --env_name CartPole-v0 -n 100 -b 1000 --exp_name q4_ac_1_1 -ntu 1 -ngsptu 1
 ![Image alt](https://github.com/Gricha1/mipt-rl-hw-2022/raw/HW_3_Gorbov/images/AC_eval_1.png)
+
 python hw3/scripts/run_hw3_actor_critic.py --env_name CartPole-v0 -n 100 -b 1000 --exp_name q4_ac_1_1 -ntu 1 -ngsptu 100
 ![Image alt](https://github.com/Gricha1/mipt-rl-hw-2022/raw/HW_3_Gorbov/images/AC_eval_2.png)
+
 python hw3/scripts/run_hw3_actor_critic.py --env_name CartPole-v0 -n 100 -b 1000 --exp_name q4_ac_1_1 -ntu 10 -ngsptu 10
 ![Image alt](https://github.com/Gricha1/mipt-rl-hw-2022/raw/HW_3_Gorbov/images/AC_eval_3.png)
