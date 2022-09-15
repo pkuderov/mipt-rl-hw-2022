@@ -1,5 +1,5 @@
 from cds_rl.infrastructure.utils import *
-
+import numpy as np # !!!
 
 class ReplayBuffer(object):
 
@@ -74,7 +74,9 @@ class ReplayBuffer(object):
         # HINT 3: look at the sample_recent_data function below
 
         # return TODO, TODO, TODO, TODO, TODO
-        raise NotImplementedError()
+        indx = np.random.permutation(self.obs.shape[0])
+        indx = indx[:batch_size]
+        return self.obs[indx], self.acs[indx], self.rews[indx], self.next_obs[indx], self.terminals[indx]
 
     def sample_recent_data(self, batch_size=1):
         return (
